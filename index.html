@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego: PasswordMaster</title>
+    <title>Juego: Guardián de Contraseñas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -17,7 +17,7 @@
             transition: all 0.3s ease-in-out;
         }
         .password-rule.valid {
-            color: #22c55e; /* green-500 */
+            color: #22c55e;
             transform: scale(1.05);
             text-decoration: line-through;
         }
@@ -25,10 +25,10 @@
             transform: rotate(360deg);
         }
         .password-rule.invalid {
-            color: #ef4444; /* red-500 */
+            color: #ef4444;
         }
          .password-rule.neutral {
-            color: #6b7280; /* gray-500 */
+            color: #6b7280;
         }
         .icon {
             transition: transform 0.5s ease;
@@ -56,17 +56,58 @@
             background-color: #e5e7eb;
         }
         .scenario-option.selected {
-            border-color: #3b82f6; /* blue-500 */
-            background-color: #bfdbfe; /* blue-200 */
+            border-color: #3b82f6;
+            background-color: #bfdbfe;
+        }
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 15px;
+            border-radius: 20px;
+        }
+        .chat-bubble.sent {
+            background-color: #dbeafe;
+            align-self: flex-end;
+        }
+        .chat-bubble.received {
+            background-color: #e5e7eb;
+            align-self: flex-start;
+        }
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+            transition: all 0.3s;
+        }
+        .progress-dot.completed {
+            background-color: #22c55e;
+        }
+        .progress-dot.active {
+            background-color: #3b82f6;
+            transform: scale(1.5);
+        }
+        .score-change {
+            animation: score-pulse 0.5s ease-out;
+        }
+        @keyframes score-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body class="bg-blue-50 text-gray-800 flex items-center justify-center min-h-screen p-4">
 
-    <div id="game-container" class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all duration-500">
+    <div id="game-container" class="w-full max-w-4xl bg-white rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all duration-500">
         
-        <header class="text-center border-b-2 border-blue-100 pb-4 mb-6">
-            <h1 class="text-3xl md:text-4xl text-blue-600">🛡️ Password Master 🛡️</h1>
+        <header class="text-center border-b-2 border-blue-100 pb-4 mb-4">
+            <div class="flex justify-between items-center mb-4">
+                <div id="progress-container" class="flex gap-2 items-center"></div>
+                <div id="score-container" class="text-2xl font-bold text-blue-600">
+                    Puntos: <span id="score">1000</span>
+                </div>
+            </div>
+            <h1 class="text-3xl md:text-4xl text-blue-600">🛡️ Guardián de Contraseñas 🛡️</h1>
             <p id="level-title" class="text-lg text-gray-500 mt-2">Nivel 1: El Poder de la Longitud</p>
         </header>
 
@@ -80,7 +121,7 @@
                 ¡Siguiente Nivel! &rarr;
             </button>
              <button id="restart-btn" class="button-font bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transform hover:scale-105 transition-transform duration-300 hidden">
-                ¡Jugar de Nuevo!
+                Volver a Empezar
             </button>
         </footer>
     </div>
@@ -92,164 +133,149 @@
         const messageArea = document.getElementById('message-area');
         const nextLevelBtn = document.getElementById('next-level-btn');
         const restartBtn = document.getElementById('restart-btn');
+        const scoreDisplay = document.getElementById('score');
+        const progressContainer = document.getElementById('progress-container');
 
         let currentLevel = 0;
+        let score = 1000;
 
+        // --- GAME LEVELS ARRAY ---
         const levels = [
-            // Nivel 1: Longitud
+            // PARTE 1: CREACIÓN DE CONTRASEÑAS
             {
                 title: "Nivel 1: El Poder de la Longitud",
-                instruction: "Las contraseñas largas son más difíciles de adivinar. ¡Crea una contraseña con <strong>al menos 8 caracteres</strong>!",
-                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Escribe aquí..."></div><div id="rules" class="mt-4 space-y-2 text-lg"><div id="rule-length" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span class="icon">✔️</span><span>Tener 8 o más caracteres</span></div></div>`,
-                validate: (password) => {
-                    const isLengthValid = password.length >= 8;
-                    document.getElementById('rule-length').className = `password-rule flex items-center gap-3 p-2 rounded-lg bg-gray-50 ${isLengthValid ? 'valid' : 'neutral'}`;
-                    return isLengthValid;
+                instruction: "Crea una contraseña con <strong>al menos 8 caracteres</strong>.",
+                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg" placeholder="Escribe aquí..."></div><div id="rules" class="mt-4 space-y-2 text-lg"><div id="rule-length" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg"><span class="icon">✔️</span><span>Tener 8 o más caracteres</span></div></div>`,
+                validate: (p) => {
+                    const valid = p.length >= 8;
+                    document.getElementById('rule-length').className = `password-rule flex items-center gap-3 p-2 rounded-lg ${valid ? 'valid' : 'neutral'}`;
+                    return valid;
                 }
             },
-            // Nivel 2: Mezcla
             {
                 title: "Nivel 2: La Mezcla Secreta",
                 instruction: "Añade <strong>mayúsculas, minúsculas y números</strong>.",
-                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Mejora tu contraseña..."></div><div id="rules" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-lg"><div id="rule-length" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>✔️</span><span>8+ caracteres</span></div><div id="rule-lowercase" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>a</span><span>Letras minúsculas</span></div><div id="rule-uppercase" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>A</span><span>Letras mayúsculas</span></div><div id="rule-number" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>#</span><span>Al menos un número</span></div></div>`,
-                validate: (password) => {
-                    const checks = { length: password.length >= 8, lowercase: /[a-z]/.test(password), uppercase: /[A-Z]/.test(password), number: /[0-9]/.test(password) };
-                    for (const rule in checks) { document.getElementById(`rule-${rule}`).className = `password-rule flex items-center gap-3 p-2 rounded-lg ${checks[rule] ? 'valid' : 'neutral'}`; }
-                    return Object.values(checks).every(Boolean);
+                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg" placeholder="Mejora tu contraseña..."></div><div id="rules" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-lg"><div id="rule-length" class="password-rule neutral flex items-center gap-3"><span>✔️</span><span>8+ caracteres</span></div><div id="rule-lowercase" class="password-rule neutral flex items-center gap-3"><span>a</span><span>Minúsculas</span></div><div id="rule-uppercase" class="password-rule neutral flex items-center gap-3"><span>A</span><span>Mayúsculas</span></div><div id="rule-number" class="password-rule neutral flex items-center gap-3"><span>#</span><span>Números</span></div></div>`,
+                validate: (p) => {
+                    const c = { len: p.length >= 8, low: /[a-z]/.test(p), upp: /[A-Z]/.test(p), num: /[0-9]/.test(p) };
+                    document.getElementById('rule-length').className = `password-rule flex items-center gap-3 ${c.len ? 'valid' : 'neutral'}`;
+                    document.getElementById('rule-lowercase').className = `password-rule flex items-center gap-3 ${c.low ? 'valid' : 'neutral'}`;
+                    document.getElementById('rule-uppercase').className = `password-rule flex items-center gap-3 ${c.upp ? 'valid' : 'neutral'}`;
+                    document.getElementById('rule-number').className = `password-rule flex items-center gap-3 ${c.num ? 'valid' : 'neutral'}`;
+                    return Object.values(c).every(Boolean);
                 }
             },
-            // Nivel 3: Símbolos
             {
                 title: "Nivel 3: El Toque Especial",
-                instruction: "¡Para ser un verdadero maestro, añade <strong>símbolos</strong>! Por ejemplo: <strong>! @ # $ %</strong>",
-                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="La contraseña final..."></div><div id="rules" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-lg"><div class="password-rule valid flex items-center gap-3 p-2 rounded-lg"><span>✔️</span><span>8+ caracteres</span></div><div class="password-rule valid flex items-center gap-3 p-2 rounded-lg"><span>a</span><span>Minúsculas</span></div><div class="password-rule valid flex items-center gap-3 p-2 rounded-lg"><span>A</span><span>Mayúsculas</span></div><div class="password-rule valid flex items-center gap-3 p-2 rounded-lg"><span>#</span><span>Números</span></div><div id="rule-symbol" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>$</span><span>Al menos un símbolo</span></div></div>`,
-                validate: (password) => {
-                    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-                    document.getElementById('rule-symbol').className = `password-rule flex items-center gap-3 p-2 rounded-lg ${hasSymbol ? 'valid' : 'neutral'}`;
-                    return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && hasSymbol;
+                instruction: "¡Añade <strong>símbolos</strong>! Por ejemplo: <strong>! @ # $ %</strong>",
+                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg" placeholder="La contraseña final..."></div><div id="rules" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-lg"><div class="password-rule valid flex items-center gap-3"><span>✔️</span><span>Completo</span></div><div class="password-rule valid flex items-center gap-3"><span>a</span><span>Completo</span></div><div class="password-rule valid flex items-center gap-3"><span>A</span><span>Completo</span></div><div class="password-rule valid flex items-center gap-3"><span>#</span><span>Completo</span></div><div id="rule-symbol" class="password-rule neutral flex items-center gap-3"><span>$</span><span>Al menos un símbolo</span></div></div>`,
+                validate: (p) => {
+                    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(p);
+                    document.getElementById('rule-symbol').className = `password-rule flex items-center gap-3 ${hasSymbol ? 'valid' : 'neutral'}`;
+                    return p.length >= 8 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /[0-9]/.test(p) && hasSymbol;
                 }
             },
-            // Nivel 4: Evitar Info Personal
+            // PARTE 2: IDENTIFICACIÓN DE RIESGOS
             {
-                title: "Nivel 4: ¡No uses tu información personal!",
-                instruction: "Tu nombre es <strong>Leo</strong> y naciste en <strong>2014</strong>. Una contraseña segura <strong>NUNCA</strong> debe incluir datos personales. ¡Crea una que cumpla todas las reglas!",
-                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Contraseña secreta..."></div><div id="rules" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-lg"><div id="rule-personal-name" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>🚫</span><span>No debe contener 'leo'</span></div><div id="rule-personal-year" class="password-rule neutral flex items-center gap-3 p-2 rounded-lg bg-gray-50"><span>🚫</span><span>No debe contener '2014'</span></div></div><p class="text-center mt-4 text-gray-500">Y debe seguir cumpliendo las reglas de antes (longitud, mayúsculas, minúsculas, números y símbolos).</p>`,
-                validate: (password) => {
-                    const allPreviousRules = password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*(),.?":{}|<>]/.test(password);
-                    const noName = !password.toLowerCase().includes('leo');
-                    const noYear = !password.includes('2014');
-                    document.getElementById('rule-personal-name').className = `password-rule flex items-center gap-3 p-2 rounded-lg ${noName ? 'valid' : 'invalid'}`;
-                    document.getElementById('rule-personal-year').className = `password-rule flex items-center gap-3 p-2 rounded-lg ${noYear ? 'valid' : 'invalid'}`;
-                    return allPreviousRules && noName && noYear;
-                }
-            },
-            // Nivel 5: Passphrases
-            {
-                title: "Nivel 5: Super Frases Secretas",
-                instruction: "Una frase es más fácil de recordar y muy segura. ¡Crea una frase usando <strong>4 palabras</strong> del banco de abajo!",
+                title: "Nivel 4: Detectives de Contraseñas I",
+                instruction: "Haz clic en todas las contraseñas <strong>inseguras</strong> que encuentres.",
                 content: () => {
-                    const words = ["Cohete", "Baila", "Verde", "Feliz", "Montaña", "Musica"].sort(() => Math.random() - 0.5);
-                    return `
-                        <div class="bg-gray-100 p-4 rounded-lg mb-4 min-h-[72px]">
-                            <input type="text" id="passphrase-input" class="w-full text-2xl p-4 border-2 border-gray-300 rounded-lg bg-white" placeholder="Forma tu frase aquí..." readonly>
-                        </div>
-                        <div id="word-bank" class="flex flex-wrap justify-center gap-4">
-                            ${words.map(w => `<div class="passphrase-word p-3 bg-blue-200 text-blue-800 font-bold rounded-lg text-xl">${w}</div>`).join('')}
-                        </div>
-                        <button id="clear-passphrase" class="mt-4 mx-auto block bg-gray-300 hover:bg-gray-400 p-2 rounded">Limpiar</button>
-                    `;
-                },
-                validate: (passphrase) => {
-                    const wordsInPhrase = passphrase.split(' ').filter(Boolean);
-                    return wordsInPhrase.length === 4;
+                    const p = [{ t: "12345678", w: true }, { t: "P@ssword123", w: true }, { t: "contraseña", w: true }, { t: "R!oDePlata#5", w: false }, { t: "asdfghjkl", w: true }, { t: "7*Lunas&Sol", w: false }, { t: "Verano2024", w: true }, { t: "miMascota", w: true }];
+                    return `<div id="password-list" class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">${p.sort(() => .5 - Math.random()).map(i => `<div class="password-option p-4 border-2 rounded-lg" data-weak="${i.w}">${i.t}</div>`).join('')}</div><button id="check-btn" class="mt-6 button-font bg-blue-500 hover:bg-blue-600 text-white p-3 px-6 rounded-full">Comprobar</button>`;
                 }
             },
-            // Nivel 6: Detectives
+             // PARTE 3: MODO HACKER
             {
-                title: "Nivel 6: ¡Detectives de Contraseñas!",
-                instruction: "¡El desafío aumenta! Algunas contraseñas parecen seguras, pero no lo son. Haz clic en todas las <strong>inseguras</strong>.",
+                title: "Nivel 5 - Modo Hacker: El Mejor Amigo",
+                instruction: "Revisa la publicación y adivina la contraseña. ¡Mucha gente usa el nombre de su mascota!",
+                content: () => `<div class="bg-white p-4 rounded-lg shadow-md border max-w-md mx-auto"><p class="font-bold">Marcos G.</p><p class="text-sm text-gray-500 mb-2">hace 2 horas</p><p>¡Bienvenido a la familia, Rocky! Eres el mejor. ❤️</p><img src="https://placehold.co/400x250/a5f3fc/0c4a6e?text=Foto+de+Rocky" alt="Foto de un perro llamado Rocky" class="mt-2 rounded-lg w-full"></div><div class="mt-4"><input id="hacker-input" class="w-full text-2xl p-4 border-2 rounded-lg" placeholder="Adivina la contraseña..."></div>`,
+                validate: (g) => ["rocky123", "rocky"].includes(g.toLowerCase())
+            },
+            {
+                title: "Nivel 6 - Modo Hacker: La Fecha Secreta",
+                instruction: "Lee la conversación. ¿Puedes adivinar la contraseña de Ana? Las fechas de nacimiento son muy comunes.",
+                content: () => `<div class="border rounded-lg p-4 max-w-md mx-auto space-y-3 flex flex-col"><div class="chat-bubble received">¡Feliz cumple, Ana!</div><div class="chat-bubble sent">¡Gracias! 😊</div><div class="chat-bubble received">¿Ya 12? ¡Cómo pasa el tiempo!</div><div class="chat-bubble sent">¡Sí! ¡Ya soy grande!</div></div><div class="mt-4"><input id="hacker-input" class="w-full text-2xl p-4 border-2 rounded-lg" placeholder="Contraseña de Ana..."></div><p class="text-center text-sm mt-2 text-gray-500">(Pista: El año actual es 2025)</p>`,
+                validate: (g) => ["ana2013", "ana12"].includes(g.toLowerCase())
+            },
+            {
+                title: "Nivel 7: Detectives de Contraseñas II",
+                instruction: "¡Más difícil! Algunas de estas contraseñas son muy engañosas. Encuentra <strong>todas</strong> las inseguras.",
                 content: () => {
-                    const passwords = [
-                        { text: "12345678", isWeak: true }, { text: "P@ssword123", isWeak: true }, 
-                        { text: "contraseña", isWeak: true }, { text: "R!oDePlata#5", isWeak: false }, 
-                        { text: "asdfghjkl", isWeak: true }, { text: "7*Lunas&Sol", isWeak: false },
-                        { text: "Verano2024", isWeak: true }, { text: "miMascota", isWeak: true },
-                        { text: "987654321", isWeak: true }, { text: "k!Tty_C@t99", isWeak: false},
-                        { text: "Futbol&Pasion", isWeak: true}, { text: "Invierno#2023", isWeak: true}
-                    ].sort(() => Math.random() - 0.5);
-                    return `<div id="password-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-center">${passwords.map(p => `<div class="password-option p-4 border-2 border-gray-200 rounded-lg bg-gray-50" data-weak="${p.isWeak}">${p.text}</div>`).join('')}</div>`;
-                },
-                validate: () => {
-                    const options = document.querySelectorAll('.password-option');
-                    let allWeakFound = true, noStrongSelected = true;
-                    options.forEach(opt => {
-                        const isWeak = opt.dataset.weak === 'true';
-                        const isSelected = opt.classList.contains('bg-yellow-300');
-                        if (isWeak && !isSelected) allWeakFound = false;
-                        if (!isWeak && isSelected) noStrongSelected = false;
-                    });
-                    if (!noStrongSelected) { showMessage("¡Cuidado! Has marcado una contraseña que SÍ es segura.", 'error'); return false; }
-                    return allWeakFound && noStrongSelected;
+                    const p = [
+                        { t: "SuperMan01", w: true }, { t: "pApa&hamburguesa", w: false }, { t: "Barcelona2025!", w: true },
+                        { t: "12345abcde", w: true }, { t: "MiClaveEsEsta", w: true }, { t: "Tr#st3N0?", w: false },
+                        { t: "InviernoFrio", w: true }, { t: "Sol@Mar!Pl@y@", w: false }, { t: "qwertyuiop", w: true }
+                    ];
+                    return `<div id="password-list" class="grid grid-cols-3 gap-4 text-center">${p.sort(() => .5 - Math.random()).map(i => `<div class="password-option p-4 border-2 rounded-lg" data-weak="${i.w}">${i.t}</div>`).join('')}</div><button id="check-btn" class="mt-6 button-font bg-blue-500 hover:bg-blue-600 text-white p-3 px-6 rounded-full">Comprobar</button>`;
                 }
             },
-            // Nivel 7: Phishing
             {
-                title: "Nivel 7: ¡Cuidado con las Trampas!",
-                instruction: "Recibes este mensaje en tu juego 'MundoGemas'. ¿Qué haces? <strong>¡Elige la opción más segura!</strong>",
-                content: () => `<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-6 rounded-lg shadow-lg mx-auto max-w-lg"><h3 class="font-bold text-xl mb-2">¡Mensaje del Administrador!</h3><p>¡FELICIDADES! Has ganado 1.000 gemas. Para reclamarlas, solo necesitamos verificar tu cuenta. Por favor, danos tu contraseña.</p></div><div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4"><div id="action-bad-1" class="action-option p-4 border-2 border-gray-200 rounded-lg bg-gray-50 text-center hover:bg-red-100 hover:border-red-400"><p class="font-bold text-red-600">Darle la contraseña</p></div><div id="action-good" class="action-option p-4 border-2 border-gray-200 rounded-lg bg-gray-50 text-center hover:bg-green-100 hover:border-green-400"><p class="font-bold text-green-600">Ignorar y avisar a un adulto</p></div><div id="action-bad-2" class="action-option p-4 border-2 border-gray-200 rounded-lg bg-gray-50 text-center hover:bg-yellow-100 hover:border-yellow-400"><p class="font-bold text-yellow-600">Preguntar para qué la necesitan</p></div></div>`,
-                validate: () => {}
+                title: "Nivel 8 - Modo Hacker: El Desafío Final",
+                instruction: "Combina la información del perfil y del chat para descubrir la contraseña de @ViajeraValiente.",
+                content: () => `<div class="grid md:grid-cols-2 gap-4"><div class="border p-4 rounded-lg bg-gray-50"><h3 class="font-bold text-center">Perfil</h3><img src="https://placehold.co/100x100/fecaca/7f1d1d?text=V" class="mx-auto rounded-full my-2"><p><strong>Nombre:</strong> Valentina</p><p><strong>Mascota:</strong> Un gato llamado Cosmo</p></div><div class="border rounded-lg p-4 flex flex-col space-y-2"><h3 class="font-bold text-center">Chat</h3><div class="chat-bubble received">¡Amo viajar! Mi sueño es ir a París.</div><div class="chat-bubble sent">¡El mío también! ¿Tu número de la suerte?</div><div class="chat-bubble received">El 7, ¡siempre!</div></div></div><div class="mt-4"><input id="hacker-input" class="w-full text-2xl p-4 border-2 rounded-lg" placeholder="Contraseña de Valentina..."></div>`,
+                validate: (g) => ["cosmo7", "paris7", "valentinacosmo7"].includes(g.toLowerCase())
             },
-            // Nivel 8: 2FA
             {
-                title: "Nivel 8: La Doble Cerradura (2FA)",
-                instruction: "¡Una capa extra de seguridad! Después de tu contraseña, algunos sitios te piden un código único. Escribe el código que ves en el teléfono.",
+                title: "Nivel 9: ¡Cuidado con las Trampas!",
+                instruction: "Recibes este mensaje en tu juego. ¿Qué haces? <strong>¡Elige la opción más segura!</strong>",
+                content: () => `<div class="bg-blue-100 border-l-4 border-blue-500 p-6 rounded-lg max-w-lg mx-auto"><h3 class="font-bold">¡Mensaje del Administrador!</h3><p>¡FELICIDADES! Has ganado 1.000 gemas. Para reclamarlas, danos tu contraseña.</p></div><div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4"><div data-correct="false" class="action-option p-4 border-2 rounded-lg text-center"><p class="font-bold text-red-600">Darle la contraseña</p></div><div data-correct="true" class="action-option p-4 border-2 rounded-lg text-center"><p class="font-bold text-green-600">Ignorar y avisar a un adulto</p></div><div data-correct="false" class="action-option p-4 border-2 rounded-lg text-center"><p class="font-bold text-yellow-600">Preguntar para qué la necesitan</p></div></div>`,
+            },
+            {
+                title: "Nivel 10: La Doble Cerradura (2FA)",
+                instruction: "Una capa extra de seguridad. Escribe el código único que ves en el teléfono.",
                 content: () => {
                     const code = Math.floor(100000 + Math.random() * 900000);
-                    return `<div class="flex flex-col md:flex-row items-center justify-center gap-8"><div class="w-full md:w-1/2"><label for="2fa-input" class="block text-center text-lg mb-2">Introduce el código aquí:</label><input id="2fa-input" type="text" data-code="${code}" class="w-full text-4xl tracking-[.5em] text-center p-4 border-2 border-gray-300 rounded-lg" maxlength="6" placeholder="______"></div><div class="w-1/2 md:w-1/3 bg-gray-800 p-2 rounded-2xl shadow-xl"><div class="bg-black p-6 rounded-lg text-center"><p class="text-white text-sm">Tu código de seguridad</p><p class="text-green-400 text-5xl font-mono my-2">${code}</p></div></div></div>`;
-                },
-                validate: () => {}
+                    return `<div class="flex flex-col md:flex-row items-center justify-center gap-8"><div class="w-full md:w-1/2"><label for="2fa-input" class="block text-center text-lg mb-2">Introduce el código aquí:</label><input id="2fa-input" type="text" data-code="${code}" class="w-full text-4xl tracking-[.5em] text-center p-4 border-2 rounded-lg" maxlength="6" placeholder="______"></div><div class="w-1/2 md:w-1/3 bg-gray-800 p-2 rounded-2xl shadow-xl"><div class="bg-black p-6 rounded-lg text-center"><p class="text-white">Tu código de seguridad</p><p class="text-green-400 text-5xl font-mono my-2">${code}</p></div></div></div>`;
+                }
             },
-            // Nivel 9: Wifi Segura
             {
-                title: "Nivel 9: ¿Dónde te conectas?",
-                instruction: "Necesitas hacer una transferencia importante. Elige la <strong>única red Wi-Fi segura</strong> de la lista para hacerlo.",
-                content: () => `
-                    <div class="mt-6 grid grid-cols-2 gap-4">
-                        <div data-safe="false" class="scenario-option p-6 border-2 border-gray-200 rounded-lg bg-gray-50 text-center">
-                            <div class="text-5xl mb-3">✈️</div><p class="font-bold text-xl">WIFI_AEROPUERTO_GRATIS</p>
-                        </div>
-                        <div data-safe="true" class="scenario-option p-6 border-2 border-gray-200 rounded-lg bg-gray-50 text-center">
-                            <div class="text-5xl mb-3">🏠</div><p class="font-bold text-xl">CasaDeLeo</p>
-                        </div>
-                        <div data-safe="false" class="scenario-option p-6 border-2 border-gray-200 rounded-lg bg-gray-50 text-center">
-                           <div class="text-5xl mb-3">☕</div><p class="font-bold text-xl">Cafeteria_Estrella</p>
-                        </div>
-                        <div data-safe="false" class="scenario-option p-6 border-2 border-gray-200 rounded-lg bg-gray-50 text-center">
-                           <div class="text-5xl mb-3">📚</div><p class="font-bold text-xl">Biblioteca_Municipal</p>
-                        </div>
-                    </div>
-                    <button id="check-wifi-btn" class="mt-6 button-font bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full text-lg shadow-lg transform hover:scale-105 transition-transform duration-300 mx-auto block">Comprobar</button>`,
-                validate: () => {}
+                title: "Nivel 11: ¿Dónde te conectas?",
+                instruction: "Necesitas revisar tu cuenta del banco. Elige la <strong>única red Wi-Fi segura</strong>.",
+                content: () => `<div class="mt-6 grid grid-cols-2 gap-4"><div data-safe="false" class="scenario-option p-6 border-2 rounded-lg text-center"><div class="text-5xl mb-3">✈️</div><p class="font-bold">WIFI_AEROPUERTO_GRATIS</p></div><div data-safe="true" class="scenario-option p-6 border-2 rounded-lg text-center"><div class="text-5xl mb-3">🏠</div><p class="font-bold">CasaDeLeo</p></div><div data-safe="false" class="scenario-option p-6 border-2 rounded-lg text-center"><div class="text-5xl mb-3">☕</div><p class="font-bold">Cafeteria_Estrella</p></div><div data-safe="false" class="scenario-option p-6 border-2 rounded-lg text-center"><div class="text-5xl mb-3">📚</div><p class="font-bold">Biblioteca_Municipal</p></div></div><button id="check-wifi-btn" class="mt-6 button-font bg-blue-500 hover:bg-blue-600 text-white p-3 px-6 rounded-full mx-auto block">Comprobar</button>`,
             },
-            // Pantalla Final
+            // PARTE 4: NIVEL FINAL
+            {
+                title: "Nivel Bonus: Tu Laboratorio de Contraseñas",
+                instruction: "¡Usa todo lo aprendido! Crea una contraseña real, fuerte y segura para ti. <strong>No la guardaremos.</strong>",
+                content: () => `<div class="relative"><input type="text" id="password-input" class="w-full text-2xl p-4 border-2 rounded-lg" placeholder="Tu nueva contraseña maestra..."></div><div id="rules" class="mt-4 grid grid-cols-2 gap-3 text-lg"><div id="rule-length" class="password-rule neutral">✔️ 8+ caracteres</div><div id="rule-lowercase" class="password-rule neutral">a Minúsculas</div><div id="rule-uppercase" class="password-rule neutral">A Mayúsculas</div><div id="rule-number" class="password-rule neutral"># Números</div><div id="rule-symbol" class="password-rule neutral">$ Símbolos</div><div id="rule-personal" class="password-rule neutral">🚫 No datos personales</div></div><button id="copy-btn" class="mt-6 button-font bg-indigo-500 hover:bg-indigo-600 text-white p-3 px-6 rounded-full mx-auto block hidden">Copiar Contraseña</button>`,
+            },
             {
                 title: "¡Felicidades, Maestro Guardián!",
-                instruction: "¡Eres un verdadero experto en seguridad digital! Has superado todos los desafíos.",
-                content: () => `<div class="text-center py-8"><div class="text-8xl mb-4 animate-bounce">👑</div><h2 class="text-3xl text-green-600">¡Misión Cumplida!</h2><p class="mt-4 text-lg max-w-xl mx-auto">Ahora sabes crear contraseñas y frases secretas, proteger tu información personal, identificar trampas y usar la tecnología de forma más segura. ¡Sigue así!</p></div>`
+                instruction: "¡Has superado todos los desafíos! Mira tu puntuación final.",
+                content: () => `<div class="text-center py-8"><div class="text-8xl mb-4 animate-bounce">👑</div><h2 class="text-3xl text-green-600">¡Misión Cumplida!</h2><p class="text-2xl mt-4">Puntuación Final: <span class="font-bold text-blue-600" id="final-score"></span></p><p class="mt-4 text-lg max-w-xl mx-auto">Ahora sabes cómo proteger tus cuentas como un verdadero experto. ¡Sigue así!</p></div>`
             }
         ];
 
+        // --- CORE GAME FUNCTIONS ---
+        function updateScore(change) {
+            score += change;
+            scoreDisplay.textContent = score;
+            scoreDisplay.parentElement.classList.add('score-change');
+            setTimeout(() => scoreDisplay.parentElement.classList.remove('score-change'), 500);
+        }
+
         function showMessage(text, type) {
-            messageArea.innerHTML = `<p class="text-lg font-semibold p-3 rounded-lg transition-all duration-300 ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${text}</p>`;
+            messageArea.innerHTML = `<p class="text-lg font-semibold p-3 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${text}</p>`;
             if (type === 'error') {
                  gameContainer.classList.add('shake');
                  setTimeout(() => gameContainer.classList.remove('shake'), 500);
             }
         }
 
+        function updateProgress() {
+            progressContainer.innerHTML = '';
+            for(let i = 0; i < levels.length -1; i++) { // Exclude final screen
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot';
+                if(i < currentLevel) dot.classList.add('completed');
+                if(i === currentLevel) dot.classList.add('active');
+                progressContainer.appendChild(dot);
+            }
+        }
+        
         function loadLevel(levelIndex) {
-            if (levelIndex >= levels.length) return;
             currentLevel = levelIndex;
+            if (levelIndex >= levels.length) return;
             const level = levels[levelIndex];
             
             gameContainer.style.transform = 'scale(0.95)';
@@ -261,90 +287,95 @@
                 nextLevelBtn.classList.add('hidden');
                 messageArea.innerHTML = '';
                 restartBtn.classList.add('hidden');
-
+                
                 gameContainer.style.transform = 'scale(1)';
                 gameContainer.style.opacity = '1';
-
+                
+                updateProgress();
                 setupLevelListeners();
 
-                if (levelIndex === levels.length - 1) { restartBtn.classList.remove('hidden'); }
+                if (level.title.includes("Felicidades")) {
+                    document.getElementById('final-score').textContent = score;
+                    restartBtn.classList.remove('hidden');
+                }
             }, 400);
         }
 
         function setupLevelListeners() {
             const level = levels[currentLevel];
-            // Niveles de creación de contraseña
-            if (currentLevel <= 3) {
-                document.getElementById('password-input').addEventListener('input', (e) => {
-                    if (level.validate(e.target.value)) {
-                        showMessage("¡Contraseña genial! ¡Es muy segura!", 'success');
+            let attempts = 0; // To penalize multiple errors on same level
+
+            // Levels 1-3: Password Creation
+            if (currentLevel <= 2) {
+                const input = document.getElementById('password-input');
+                input.addEventListener('input', () => {
+                    if (level.validate(input.value)) {
+                        showMessage("¡Contraseña genial!", 'success');
                         nextLevelBtn.classList.remove('hidden');
                     } else {
-                        messageArea.innerHTML = '';
                         nextLevelBtn.classList.add('hidden');
                     }
                 });
-            } 
-            // Nivel de Passphrases
-            else if (currentLevel === 4) {
-                 const input = document.getElementById('passphrase-input');
-                 const words = document.querySelectorAll('.passphrase-word');
-                 let selectedWords = [];
-                 words.forEach(word => {
-                     word.addEventListener('click', () => {
-                         if(word.classList.contains('used') || selectedWords.length >= 4) return;
-                         selectedWords.push(word.textContent);
-                         input.value = selectedWords.join(' ');
-                         word.classList.add('used');
-                         if (level.validate(input.value)) {
-                             showMessage("¡Excelente frase secreta! Larga y fácil de recordar.", 'success');
-                             nextLevelBtn.classList.remove('hidden');
-                         }
-                     });
-                 });
-                 document.getElementById('clear-passphrase').addEventListener('click', () => {
-                     input.value = '';
-                     selectedWords = [];
-                     words.forEach(w => w.classList.remove('used'));
-                     nextLevelBtn.classList.add('hidden');
-                     messageArea.innerHTML = '';
-                 });
             }
-            // Nivel de detección de débiles
-            else if (currentLevel === 5) {
-                const options = document.querySelectorAll('.password-option');
-                const weakCount = Array.from(options).filter(opt => opt.dataset.weak === 'true').length;
-                messageArea.innerHTML = `<p class="text-md text-gray-600">Encuentra las ${weakCount} contraseñas inseguras.</p>`;
-                options.forEach(opt => {
-                    opt.addEventListener('click', () => {
-                        opt.classList.toggle('bg-yellow-300');
-                        opt.classList.toggle('border-yellow-500');
-                        if (level.validate() && document.querySelectorAll('.password-option.bg-yellow-300').length === weakCount) {
-                            showMessage("¡Excelente! Encontraste todas las contraseñas débiles.", 'success');
+            // Levels 4 & 7: Detectives
+            else if (level.title.includes("Detectives")) {
+                document.getElementById('check-btn').addEventListener('click', () => {
+                    let correct = true;
+                    document.querySelectorAll('.password-option').forEach(opt => {
+                        const isWeak = opt.dataset.weak === 'true';
+                        const isSelected = opt.classList.contains('bg-yellow-300');
+                        if ((isWeak && !isSelected) || (!isWeak && isSelected)) {
+                            correct = false;
+                        }
+                    });
+
+                    if (correct) {
+                        showMessage("¡Excelente! Encontraste todas.", 'success');
+                        nextLevelBtn.classList.remove('hidden');
+                    } else {
+                        showMessage("Algunas no son correctas. ¡Inténtalo de nuevo!", 'error');
+                        if(attempts === 0) updateScore(-50);
+                        attempts++;
+                    }
+                });
+                document.querySelectorAll('.password-option').forEach(opt => {
+                     opt.addEventListener('click', () => opt.classList.toggle('bg-yellow-300'));
+                });
+            }
+            // Levels 5, 6, 8: Hacker Mode
+            else if (level.title.includes("Modo Hacker")) {
+                const input = document.getElementById('hacker-input');
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (level.validate(input.value)) {
+                            showMessage("¡Contraseña descubierta! Por eso no debes usar datos personales.", 'success');
                             nextLevelBtn.classList.remove('hidden');
-                        } else { if(!level.validate()) nextLevelBtn.classList.add('hidden'); }
+                        } else {
+                            showMessage("Incorrecto. Sigue buscando pistas...", 'error');
+                            if(attempts === 0) updateScore(-25);
+                            attempts++;
+                            input.value = '';
+                        }
+                    }
+                });
+            }
+            // Level 9: Phishing
+            else if (level.title.includes("Trampas")) {
+                document.querySelectorAll('.action-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        if (opt.dataset.correct === 'true') {
+                            showMessage("¡Respuesta Correcta! Nunca compartas tu contraseña.", 'success');
+                            nextLevelBtn.classList.remove('hidden');
+                        } else {
+                            showMessage("¡Oh no, era una trampa! No interactúes con esos mensajes.", 'error');
+                            if(attempts === 0) updateScore(-75);
+                            attempts++;
+                        }
                     });
                 });
             }
-            // Nivel de Phishing
-            else if (currentLevel === 6) {
-                document.getElementById('action-good').addEventListener('click', () => {
-                    showMessage("¡Respuesta Correcta! Nunca debes compartir tu contraseña, ni siquiera con un 'administrador'.", 'success');
-                    nextLevelBtn.classList.remove('hidden');
-                    document.getElementById('action-bad-1').style.cssText = 'opacity: 0.5; pointer-events: none;';
-                     document.getElementById('action-bad-2').style.cssText = 'opacity: 0.5; pointer-events: none;';
-                });
-                document.getElementById('action-bad-1').addEventListener('click', () => {
-                    showMessage("¡Oh, no! ¡Era una trampa! Has compartido tu contraseña.", 'error');
-                    nextLevelBtn.classList.add('hidden');
-                });
-                document.getElementById('action-bad-2').addEventListener('click', () => {
-                    showMessage("¡Cuidado! Aunque es bueno ser curioso, nunca debes responder a estos mensajes. ¡Ignóralos!", 'error');
-                    nextLevelBtn.classList.add('hidden');
-                });
-            }
-            // Nivel 2FA
-            else if (currentLevel === 7) {
+             // Level 10: 2FA
+            else if (level.title.includes("Doble Cerradura")) {
                  const input = document.getElementById('2fa-input');
                  input.addEventListener('input', () => {
                      if (input.value.length === 6) {
@@ -352,47 +383,95 @@
                              showMessage("¡Código correcto! Tu cuenta está doblemente protegida.", 'success');
                              nextLevelBtn.classList.remove('hidden');
                          } else {
-                             showMessage("Código incorrecto. Inténtalo de nuevo.", 'error');
+                             showMessage("Código incorrecto.", 'error');
+                             if(attempts === 0) updateScore(-20);
+                             attempts++;
                              input.value = '';
                          }
                      }
                  });
             }
-             // Nivel Wifi Segura
-            else if (currentLevel === 8) {
-                const options = document.querySelectorAll('.scenario-option');
-                let selectedOption = null;
-                options.forEach(opt => {
-                    opt.addEventListener('click', () => {
-                        options.forEach(o => o.classList.remove('selected'));
-                        opt.classList.add('selected');
-                        selectedOption = opt;
-                    });
-                });
-                document.getElementById('check-wifi-btn').addEventListener('click', () => {
-                    if (!selectedOption) {
-                        showMessage("Debes elegir una opción.", 'error');
-                        return;
-                    }
-                    if (selectedOption.dataset.safe === 'true') {
-                        showMessage("¡Muy bien! Las redes privadas de casa son las más seguras.", 'success');
+            // Level 11: Wifi
+            else if (level.title.includes("Dónde te conectas")) {
+                 document.getElementById('check-wifi-btn').addEventListener('click', () => {
+                    const selected = document.querySelector('.scenario-option.selected');
+                    if (!selected) { showMessage("Debes elegir una opción.", 'error'); return; }
+                    if (selected.dataset.safe === 'true') {
+                        showMessage("¡Muy bien! Las redes privadas son más seguras.", 'success');
                         nextLevelBtn.classList.remove('hidden');
                     } else {
-                        showMessage("¡Cuidado! Las redes públicas o gratuitas no son seguras para información importante.", 'error');
+                        showMessage("¡Cuidado! Las redes públicas no son seguras.", 'error');
+                        if(attempts === 0) updateScore(-40);
+                        attempts++;
                     }
+                });
+                 document.querySelectorAll('.scenario-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        document.querySelectorAll('.scenario-option').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                    });
+                });
+            }
+            // Level 12: Bonus Lab
+            else if (level.title.includes("Bonus")) {
+                const input = document.getElementById('password-input');
+                const copyBtn = document.getElementById('copy-btn');
+                input.addEventListener('input', () => {
+                    const p = input.value;
+                    const checks = {
+                        length: p.length >= 12,
+                        lowercase: /[a-z]/.test(p),
+                        uppercase: /[A-Z]/.test(p),
+                        number: /[0-9]/.test(p),
+                        symbol: /[!@#$%^&*(),.?":{}|<>]/.test(p),
+                        personal: !/(\d{4}|leo|carlos|ana|sofia|valentina|rocky|cosmo)/i.test(p)
+                    };
+                    let allValid = true;
+                    for (const rule in checks) {
+                        const el = document.getElementById(`rule-${rule}`);
+                        if(checks[rule]) el.classList.replace('neutral', 'valid');
+                        else {
+                            el.classList.replace('valid', 'neutral');
+                            allValid = false;
+                        }
+                    }
+                    if(allValid) {
+                         showMessage("¡Contraseña de nivel MAESTRO! ¡Úsala!", 'success');
+                         copyBtn.classList.remove('hidden');
+                    } else {
+                        copyBtn.classList.add('hidden');
+                        messageArea.innerHTML = '';
+                    }
+                });
+                copyBtn.addEventListener('click', () => {
+                    const passwordToCopy = input.value;
+                    const tempInput = document.createElement('input');
+                    tempInput.value = passwordToCopy;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                    showMessage('¡Contraseña copiada!', 'success');
                 });
             }
         }
         
         nextLevelBtn.addEventListener('click', () => {
+            updateScore(50); // Base points for passing a level
             loadLevel(currentLevel + 1);
         });
 
         restartBtn.addEventListener('click', () => {
+            score = 1000;
+            updateScore(0);
             loadLevel(0);
         });
 
-        window.onload = () => loadLevel(0);
+        window.onload = () => {
+            score = 1000;
+            scoreDisplay.textContent = score;
+            loadLevel(0);
+        };
     </script>
 </body>
 </html>
